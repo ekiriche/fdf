@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/15 14:32:58 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/15 16:07:55 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,14 @@ typedef struct	s_coefs
 	float	coef3;
 }				t_coefs;
 
+typedef struct	s_hold
+{
+	float	x1;
+	float	x2;
+	float	y1;
+	float	y2;
+}				t_hold;
+
 int		escape_key(int key, void *param)
 {
 	if (key == 53)
@@ -54,18 +62,15 @@ char	*my_strjoin1(char *s1, char *s2)
 	int		i;
 	int		j;
 
-	i = 0;
+	i = -1;
 	j = 0;
 	if (!s1 || !s2)
 		return (NULL);
 	if (!(res = (char*)malloc(sizeof(char) *
 					(ft_strlen(s1) + ft_strlen(s2)) + 1)))
 		return (NULL);
-	while (s1[i])
-	{
+	while (s1[++i])
 		res[i] = s1[i];
-		i++;
-	}
 	while (s2[j])
 	{
 		res[i] = s2[j];
@@ -97,10 +102,7 @@ char	**coords_from_file(int fd)
 	}
 	map = ft_strsplit(str2, '\n');
 	if (step == 1)
-	{
 		ft_memdel((void**)&str2);
-		//		ft_memdel((void**)&str);
-	}
 	return (map);
 }
 
@@ -112,12 +114,12 @@ int 	**coords_z(char **map, int rows, int columns)
 	int k;
 
 	i = -1;
-	ans = (int**)malloc(sizeof(int*) * (rows + 1024));
+	ans = (int**)malloc(sizeof(int*) * (rows + 64000));
 	while (++i < rows)
 	{
 		j = -1;
 		k = 0;
-		ans[i] = (int*)malloc(sizeof(int) * (columns + 1024));
+		ans[i] = (int*)malloc(sizeof(int) * (columns + 64000));
 		while (map[i][++j])
 			if (map[i][j] != ' ')
 			{
@@ -162,21 +164,33 @@ int		count_column(char **str)
 {
 	int	ans;
 	int	i;
+	int	j;
+	int	check;
 
 	ans = 0;
-	i = 0;
-	while (str[0][i])
+	j = 0;
+	check = 0;
+	while (str[j])
 	{
-		if (str[0][i] != ' ')
-			ans++;
-		while (str[0][i] != ' ' && str[0][i])
+		i = 0;
+		while (str[j][i])
+		{
+			if (str[j][i] != ' ')
+				ans++;
+			while (str[j][i] != ' ' && str[j][i])
+				i++;
+			if (str[j][i] == '\0')
+				break ;
 			i++;
-		if (str[0][i] == '\0')
-			break ;
-		i++;
+		}
+		if (check != 0 && check != ans)
+			return (-1);
+		check = ans;
+		ans = 0;
+		j++;
 	}
-	ft_printf("%d\n", ans);
-	return (ans);
+	ft_printf("%d\n", check);
+	return (check);
 }
 
 int		count_row(char **str)
@@ -210,7 +224,7 @@ void	set_coefs(t_coefs *coefs, int columns, float *x, float *y)
 	{
 		coefs->coef1 = 15;
 		coefs->coef2 = 15;
-		coefs->coef3 = 15;
+		coefs->coef3 = 20;
 	}
 	coefs->i = -1;
 }
@@ -224,10 +238,10 @@ t_point	**ultimate_creator(int rows, int columns, int **map)
 
 	coefs = (t_coefs*)malloc(sizeof(t_coefs));
 	set_coefs(coefs, columns, &x, &y);
-	coords = (t_point**)malloc(sizeof(t_point*) * (rows + 1024));
+	coords = (t_point**)malloc(sizeof(t_point*) * (rows + 64000));
 	while (++coefs->i < rows)
 	{
-		coords[coefs->i] = (t_point*)malloc(sizeof(t_point) * (columns + 1024));
+		coords[coefs->i] = (t_point*)malloc(sizeof(t_point) * (columns + 64000));
 		coefs->j = -1;
 		while (++coefs->j < columns)
 		{
@@ -244,8 +258,8 @@ t_point	**ultimate_creator(int rows, int columns, int **map)
 
 void	print_smth(void *mlx_ptr, void *mlx_win, t_point **lul, t_map *scroll)
 {
-	int	i;
-	int	j;
+	int		i;
+	int		j;
 
 	i = 0;
 	while (i < scroll->row)
@@ -306,10 +320,14 @@ int		main(int argc, char **argv)
 
 	mlx_ptr = mlx_init();
 	fd = open(argv[1], O_RDONLY);
+	if (fd == -1)
+		return (0);
 	scroll = (t_map*)malloc(sizeof(t_map));
 	scroll->map = coords_from_file(fd);
-	scroll->column = count_column(scroll->map);
 	scroll->row = count_row(scroll->map);
+	scroll->column = count_column(scroll->map);
+	if (scroll->column == -1)
+		return (0);
 	mlx_win = mlx_new_window(mlx_ptr, 1500, 1000, "yay");
 	scroll->int_map = coords_z(scroll->map, scroll->row, scroll->column);
 	lul = ultimate_creator(scroll->row, scroll->column, scroll->int_map);
