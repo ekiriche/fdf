@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/06 18:17:28 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/15 14:32:58 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,21 +48,59 @@ int		escape_key(int key, void *param)
 	return (0);
 }
 
+char	*my_strjoin1(char *s1, char *s2)
+{
+	char	*res;
+	int		i;
+	int		j;
+
+	i = 0;
+	j = 0;
+	if (!s1 || !s2)
+		return (NULL);
+	if (!(res = (char*)malloc(sizeof(char) *
+					(ft_strlen(s1) + ft_strlen(s2)) + 1)))
+		return (NULL);
+	while (s1[i])
+	{
+		res[i] = s1[i];
+		i++;
+	}
+	while (s2[j])
+	{
+		res[i] = s2[j];
+		i++;
+		j++;
+	}
+	res[i] = '\0';
+	ft_memdel((void**)&s1);
+	return (res);
+}
+
 char	**coords_from_file(int fd)
 {
 	char	**map;
 	char	*str;
 	char	*str2;
+	int		step;
 
+	step = 0;
 	while (get_next_line(fd, &str))
 	{
-		if (str2 == NULL)
+		if (step == 0)
 			str2 = ft_strdup(str);
 		else
-			str2 = ft_strjoin(str2, str);
-		str2 = ft_strjoin(str2, "\n");
+			str2 = my_strjoin1(str2, str);
+		str2 = my_strjoin1(str2, "\n");
+		ft_memdel((void**)&str);
+		step = 1;
 	}
 	map = ft_strsplit(str2, '\n');
+	if (step == 1)
+	{
+		ft_memdel((void**)&str2);
+		//		ft_memdel((void**)&str);
+	}
 	return (map);
 }
 
@@ -74,12 +112,12 @@ int 	**coords_z(char **map, int rows, int columns)
 	int k;
 
 	i = -1;
-	ans = (int**)malloc(sizeof(int*) * (rows + 1));
+	ans = (int**)malloc(sizeof(int*) * (rows + 1024));
 	while (++i < rows)
 	{
 		j = -1;
 		k = 0;
-		ans[i] = (int*)malloc(sizeof(int) * (columns + 1));
+		ans[i] = (int*)malloc(sizeof(int) * (columns + 1024));
 		while (map[i][++j])
 			if (map[i][j] != ' ')
 			{
@@ -101,7 +139,7 @@ void	draw_line(int x1, int y1, int x2, int y2, void *mlx_ptr, void *mlx_win)
 	const int signX = x1 < x2 ? 1 : -1;
 	const int signY = y1 < y2 ? 1 : -1;
 	int error = deltaX - deltaY;
-	
+
 	mlx_pixel_put(mlx_ptr, mlx_win, x2, y2, 40000);
 	while (x1 != x2 || y1 != y2)
 	{
@@ -137,6 +175,7 @@ int		count_column(char **str)
 			break ;
 		i++;
 	}
+	ft_printf("%d\n", ans);
 	return (ans);
 }
 
@@ -147,6 +186,7 @@ int		count_row(char **str)
 	ans = 0;
 	while (str[ans])
 		ans++;
+	ft_printf("%i\n", ans);
 	return (ans);
 }
 
@@ -184,20 +224,21 @@ t_point	**ultimate_creator(int rows, int columns, int **map)
 
 	coefs = (t_coefs*)malloc(sizeof(t_coefs));
 	set_coefs(coefs, columns, &x, &y);
-	coords = (t_point**)malloc(sizeof(t_point*) * (rows + 1));
+	coords = (t_point**)malloc(sizeof(t_point*) * (rows + 1024));
 	while (++coefs->i < rows)
 	{
-		coords[coefs->i] = malloc(sizeof(t_point) * (columns + 1));
+		coords[coefs->i] = (t_point*)malloc(sizeof(t_point) * (columns + 1024));
 		coefs->j = -1;
 		while (++coefs->j < columns)
 		{
-			coords[coefs->i][coefs->j].x = (float)(x + coefs->coef1 * (float)coefs->j);
-			coords[coefs->i][coefs->j].y = (float)(y - coefs->coef2 * (float)coefs->j * 0.5);
-			coords[coefs->i][coefs->j].z = (float)((float)map[coefs->i][coefs->j] * coefs->coef3);
+			coords[coefs->i][coefs->j].x = (x + coefs->coef1 * coefs->j);
+			coords[coefs->i][coefs->j].y = (y - coefs->coef2 * coefs->j * 0.5);
+			coords[coefs->i][coefs->j].z = (map[coefs->i][coefs->j] * coefs->coef3);
 		}
 		x += coefs->coef1;
 		y += coefs->coef2 * 0.5;
 	}
+	ft_memdel((void**)&coefs);
 	return (coords);
 }
 
@@ -231,12 +272,28 @@ void	destroy_point(t_point **lul, int rows)
 	int i;
 
 	i = rows - 1;
-	while (i > 0)
+	while (i >= 0)
 	{
 		ft_memdel((void**)&lul[i]);
 		i--;
 	}
 	ft_memdel((void**)&lul);
+}
+
+void	destroy_scroll(t_map *scroll, int rows)
+{
+	int i;
+
+	i = rows - 1;
+	while (i >= 0)
+	{
+		ft_memdel((void**)&scroll->map[i]);
+		ft_memdel((void**)&scroll->int_map[i]);
+		i--;
+	}
+	ft_memdel((void**)&scroll->map);
+	ft_memdel((void**)&scroll->int_map);
+	ft_memdel((void**)&scroll);
 }
 
 int		main(int argc, char **argv)
@@ -258,10 +315,8 @@ int		main(int argc, char **argv)
 	lul = ultimate_creator(scroll->row, scroll->column, scroll->int_map);
 	print_smth(mlx_ptr, mlx_win, lul, scroll);
 	destroy_point(lul, scroll->row);
-//	ft_memdel((void**)&scroll->map);
-//	ft_memdel((void**)&scroll->int_map);
-//	ft_memdel((void**)&scroll);
-	//	ft_printf("%d %d\n", row, column);
+	destroy_scroll(scroll, scroll->row);
 	mlx_key_hook(mlx_win, escape_key, (void *)0);
 	mlx_loop(mlx_ptr);
+	return (0);
 }
