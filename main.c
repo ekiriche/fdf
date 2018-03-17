@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/15 16:07:55 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/17 12:45:34 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,9 @@
 
 typedef struct	s_point
 {
-	float	x;
-	float	y;
-	float	z;
+	int	x;
+	int	y;
+	int	z;
 }				t_point;
 
 typedef struct	s_map
@@ -43,10 +43,12 @@ typedef struct	s_coefs
 
 typedef struct	s_hold
 {
-	float	x1;
-	float	x2;
-	float	y1;
-	float	y2;
+	int	x1;
+	int	x2;
+	int	y1;
+	int	y2;
+	void	*mlx_ptrz;
+	void	*mlx_winz;
 }				t_hold;
 
 int		escape_key(int key, void *param)
@@ -134,28 +136,28 @@ int 	**coords_z(char **map, int rows, int columns)
 	return (ans);
 }
 
-void	draw_line(int x1, int y1, int x2, int y2, void *mlx_ptr, void *mlx_win)
+void	draw_line(t_hold *h)
 {
-	const int deltaX = abs(x2 - x1);
-	const int deltaY = abs(y2 - y1);
-	const int signX = x1 < x2 ? 1 : -1;
-	const int signY = y1 < y2 ? 1 : -1;
+	const int deltaX = abs(h->x2 - h->x1);
+	const int deltaY = abs(h->y2 - h->y1);
+	const int signX = h->x1 < h->x2 ? 1 : -1;
+	const int signY = h->y1 < h->y2 ? 1 : -1;
 	int error = deltaX - deltaY;
 
-	mlx_pixel_put(mlx_ptr, mlx_win, x2, y2, 40000);
-	while (x1 != x2 || y1 != y2)
+	mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x2, h->y2, 40000);
+	while (h->x1 != h->x2 || h->y1 != h->y2)
 	{
-		mlx_pixel_put(mlx_ptr, mlx_win, x1, y1, 40000);
+		mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x1, h->y1, 40000);
 		const int error2 = error * 2;
 		if (error2 > -deltaY)
 		{
 			error -= deltaY;
-			x1 += signX;
+			h->x1 += signX;
 		}
 		if (error2 < deltaX)
 		{
 			error += deltaX;
-			y1 += signY;
+			h->y1 += signY;
 		}
 	}
 }
@@ -204,7 +206,7 @@ int		count_row(char **str)
 	return (ans);
 }
 
-void	set_coefs(t_coefs *coefs, int columns, float *x, float *y)
+void	set_coefs(t_coefs *coefs, int columns, int *x, int *y)
 {
 	*x = 50;
 	*y = 600;
@@ -216,9 +218,9 @@ void	set_coefs(t_coefs *coefs, int columns, float *x, float *y)
 	}
 	else if (columns > 100)
 	{
-		coefs->coef1 = 0.1;
-		coefs->coef2 = 0.1;
-		coefs->coef3 = 0.1;
+		coefs->coef1 = 1;
+		coefs->coef2 = 1;
+		coefs->coef3 = 1;
 	}
 	else
 	{
@@ -231,8 +233,8 @@ void	set_coefs(t_coefs *coefs, int columns, float *x, float *y)
 
 t_point	**ultimate_creator(int rows, int columns, int **map)
 {
-	float		x;
-	float		y;
+	int		x;
+	int		y;
 	t_point	**coords;
 	t_coefs	*coefs;
 
@@ -256,28 +258,72 @@ t_point	**ultimate_creator(int rows, int columns, int **map)
 	return (coords);
 }
 
+void	set_hold_mlx(t_hold *holdup, void *mlx_ptr, void *mlx_win)
+{
+	holdup->mlx_ptrz = mlx_ptr;
+	holdup->mlx_winz = mlx_win;
+}
+
+void	some_drawing2(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
+{
+	if (ig->j + 1 < scroll->column)
+	{
+		holdup->x1 = lul[ig->i][ig->j].x;
+		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
+		holdup->x2 = lul[ig->i][ig->j + 1].x;
+		holdup->y2 = lul[ig->i][ig->j + 1].y - lul[ig->i][ig->j + 1].z;
+		draw_line(holdup);
+	}
+	if (ig->j - 1 > 0)
+	{
+		holdup->x1 = lul[ig->i][ig->j].x;
+		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
+		holdup->x2 = lul[ig->i][ig->j - 1].x;
+		holdup->y2 = lul[ig->i][ig->j - 1].y - lul[ig->i][ig->j - 1].z;
+		draw_line(holdup);
+	}
+}
+
+void	some_drawing1(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
+{
+	if (ig->i - 1 > 0)
+	{
+		holdup->x1 = lul[ig->i][ig->j].x;
+		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
+		holdup->x2 = lul[ig->i - 1][ig->j].x;
+		holdup->y2 = lul[ig->i - 1][ig->j].y - lul[ig->i - 1][ig->j].z;
+		draw_line(holdup);
+	}
+	if (ig->i + 1 < scroll->row)
+	{
+		holdup->x1 = lul[ig->i][ig->j].x;
+		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
+		holdup->x2 = lul[ig->i + 1][ig->j].x;
+		holdup->y2 = lul[ig->i + 1][ig->j].y - lul[ig->i + 1][ig->j].z;
+		draw_line(holdup);
+	}
+	some_drawing2(holdup, ig, lul, scroll);
+}
+
+
 void	print_smth(void *mlx_ptr, void *mlx_win, t_point **lul, t_map *scroll)
 {
-	int		i;
-	int		j;
+	t_hold	*holdup;
+	t_coefs *ig;
 
-	i = 0;
-	while (i < scroll->row)
+	holdup = (t_hold*)malloc(sizeof(t_hold));
+	ig = (t_coefs*)malloc(sizeof(t_coefs));
+	set_hold_mlx(holdup, mlx_ptr, mlx_win);
+	ig->i = 0;
+	while (ig->i < scroll->row)
 	{
-		j = 0;
-		while (j < scroll->column)
+		ig->j = 0;
+		while (ig->j < scroll->column)
 		{
-			if (i - 1 > 0)
-				draw_line(lul[i][j].x, lul[i][j].y - lul[i][j].z, lul[i - 1][j].x, lul[i - 1][j].y - lul[i - 1][j].z, mlx_ptr, mlx_win);
-			if (i + 1 < scroll->row)
-				draw_line(lul[i][j].x, lul[i][j].y - lul[i][j].z, lul[i + 1][j].x, lul[i + 1][j].y - lul[i + 1][j].z, mlx_ptr, mlx_win);
-			if (j + 1 < scroll->column)
-				draw_line(lul[i][j].x, lul[i][j].y - lul[i][j].z, lul[i][j + 1].x, lul[i][j + 1].y - lul[i][j + 1].z, mlx_ptr, mlx_win);
-			if (j - 1 > 0)
-				draw_line(lul[i][j].x, lul[i][j].y - lul[i][j].z, lul[i][j - 1].x, lul[i][j - 1].y - lul[i][j - 1].z, mlx_ptr, mlx_win);
-			j++;
+			some_drawing1(holdup, ig, lul, scroll);
+			ig->j++;
 		}
-		i++;
+		ig->i++;
 	}
 }
 
