@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/17 12:45:34 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/19 16:56:16 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,17 +19,26 @@
 
 typedef struct	s_point
 {
-	int	x;
-	int	y;
-	int	z;
+	float		x;
+	float		y;
+	float		z;
+	long int	color;
 }				t_point;
+
+typedef struct	s_color
+{
+	int	color;
+}				t_color;
 
 typedef struct	s_map
 {
-	char	**map;
-	int		**int_map;
-	int		column;
-	int		row;
+	char		**map;
+	int			**int_map;
+	int			max_z;
+	int			column;
+	int			row;
+	char		*color;
+	long int	color_int;
 }				t_map;
 
 typedef struct	s_coefs
@@ -43,12 +52,13 @@ typedef struct	s_coefs
 
 typedef struct	s_hold
 {
-	int	x1;
-	int	x2;
-	int	y1;
-	int	y2;
-	void	*mlx_ptrz;
-	void	*mlx_winz;
+	int			x1;
+	int			x2;
+	int			y1;
+	int			y2;
+	long int	color;
+	void		*mlx_ptrz;
+	void		*mlx_winz;
 }				t_hold;
 
 int		escape_key(int key, void *param)
@@ -56,6 +66,58 @@ int		escape_key(int key, void *param)
 	if (key == 53)
 		exit(0);
 	return (0);
+}
+
+long int	ft_strtol(char *line)
+{
+	long int	rslt;
+	long int	*hexa;
+	int			cmp;
+	int			power;
+
+	cmp = 0;
+	power = 0;
+	rslt = 0;
+	hexa = (long int*)malloc(sizeof(long int) * ft_strlen(line) + 64000);
+	while (line[cmp])
+	{
+		if (line[cmp] >= 'A' && line[cmp] <= 'F')
+			hexa[cmp] = line[cmp] + 10 - 'A';
+		else if (line[cmp] >= 'a' && line[cmp] <= 'f')
+			hexa[cmp] = line[cmp] + 10 - 'a';
+		else if (line[cmp] >= '0' && line[cmp] <= '9')
+			hexa[cmp] = line[cmp] - '0';
+		cmp++;
+	}
+	while (--cmp >= 0)
+	{
+		rslt += hexa[cmp] * ft_power(16, power);
+		power++;
+	}
+	ft_memdel((void**)&hexa);
+	return (rslt);
+}
+
+int		look_for_max_z(t_map *map)
+{
+	int	max;
+	int	i;
+	int	j;
+
+	max = 1;
+	i = 0;
+	while (i < map->row)
+	{
+		j = 0;
+		while (j < map->column)
+		{
+			if (map->int_map[i][j] > max)
+				max = map->int_map[i][j];
+			j++;
+		}
+		i++;
+	}
+	return (max);
 }
 
 char	*my_strjoin1(char *s1, char *s2)
@@ -108,27 +170,43 @@ char	**coords_from_file(int fd)
 	return (map);
 }
 
-int 	**coords_z(char **map, int rows, int columns)
+int 	**coords_z(t_map *scroll, t_color **wow)
 {
 	int **ans;
 	int i;
 	int j;
 	int k;
+	int	count;
 
 	i = -1;
-	ans = (int**)malloc(sizeof(int*) * (rows + 64000));
-	while (++i < rows)
+	count = 0;
+	ans = (int**)malloc(sizeof(int*) * (scroll->row + 64000));
+	while (++i < scroll->row)
 	{
 		j = -1;
 		k = 0;
-		ans[i] = (int*)malloc(sizeof(int) * (columns + 64000));
-		while (map[i][++j])
-			if (map[i][j] != ' ')
+		ans[i] = (int*)malloc(sizeof(int) * (scroll->column + 64000));
+		wow[i] = (t_color*)malloc(sizeof(t_color) * (scroll->column + 64000));
+		while (scroll->map[i][++j])
+			if (scroll->map[i][j] != ' ')
 			{
-				ans[i][k] = ft_atoi(map[i] + j);
+				ans[i][k] = ft_atoi(scroll->map[i] + j);
 				k++;
-				while (map[i][j] != ' ' && map[i][j])
+				while (scroll->map[i][j] != ' ' && scroll->map[i][j] && scroll->map[i][j] != ',')
 					j++;
+				if (scroll->map[i][j] == ',')
+				{
+					while (scroll->map[i][j + count + 1] != ' ' && scroll->map[i][j + count + 1])
+						count++;
+					scroll->color = ft_strsub(scroll->map[i] + j + 1, 0, count);
+					wow[i][k - 1].color = ft_strtol(scroll->color);
+					ft_memdel((void**)&scroll->color);
+					j += count + 1;
+				}
+				else
+					wow[i][k - 1].color = 40000;
+//				ft_printf("%d\n", wow[i][k - 1].color);
+				count = 0;
 			}
 		ans[i][k] = '\0';
 	}
@@ -144,10 +222,10 @@ void	draw_line(t_hold *h)
 	const int signY = h->y1 < h->y2 ? 1 : -1;
 	int error = deltaX - deltaY;
 
-	mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x2, h->y2, 40000);
+	mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x2, h->y2, h->color);
 	while (h->x1 != h->x2 || h->y1 != h->y2)
 	{
-		mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x1, h->y1, 40000);
+		mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x1, h->y1, h->color);
 		const int error2 = error * 2;
 		if (error2 > -deltaY)
 		{
@@ -206,54 +284,90 @@ int		count_row(char **str)
 	return (ans);
 }
 
-void	set_coefs(t_coefs *coefs, int columns, int *x, int *y)
+void	set_coefs(t_coefs *coefs, t_map *scroll, float *x, float *y)
 {
 	*x = 50;
 	*y = 600;
-	if (columns > 30)
-	{
-		coefs->coef1 = 4;
-		coefs->coef2 = 4;
-		coefs->coef3 = 6;
-	}
-	else if (columns > 100)
-	{
-		coefs->coef1 = 1;
+	/*	if (scroll->column >= 400)
+		{
+		coefs->coef1 = 0.9;
+		coefs->coef2 = 1.1;
+		coefs->coef3 = 2;
+		}
+		else if (scroll->column >= 200)
+		{
+		coefs->coef1 = 3;
 		coefs->coef2 = 1;
-		coefs->coef3 = 1;
-	}
-	else
-	{
-		coefs->coef1 = 15;
-		coefs->coef2 = 15;
-		coefs->coef3 = 20;
-	}
+		coefs->coef3 = 2;
+		}
+		else if (scroll->column >= 100)
+		{
+		coefs->coef1 = 2;
+		coefs->coef2 = 2;
+		coefs->coef3 = 3;
+		}
+		else if (scroll->column >= 50)
+		{
+		coefs->coef1 = 5;
+		coefs->coef2 = 5;
+		coefs->coef3 = 8;
+		}
+		else
+		{
+		coefs->coef1 = 10;
+		coefs->coef2 = 10;
+		coefs->coef3 = 15;
+		}*/
+	coefs->coef1 = 500 / scroll->column + 0.5;
+	coefs->coef2 = 300 / scroll->row + 1.5;
+	coefs->coef3 = 100 / scroll->max_z + 2.5;
 	coefs->i = -1;
 }
 
-t_point	**ultimate_creator(int rows, int columns, int **map)
+void	destroy_color(t_color **wow)
 {
-	int		x;
-	int		y;
+	int	i;
+
+	i = 0;
+	while (wow[i])
+	{
+		ft_memdel((void**)&wow[i]);
+		i++;
+	}
+	ft_memdel((void**)&wow);
+}
+
+t_point	**ultimate_creator(t_map *scroll)
+{
+	float		x;
+	float		y;
 	t_point	**coords;
 	t_coefs	*coefs;
+	t_color	**wow;
 
 	coefs = (t_coefs*)malloc(sizeof(t_coefs));
-	set_coefs(coefs, columns, &x, &y);
-	coords = (t_point**)malloc(sizeof(t_point*) * (rows + 64000));
-	while (++coefs->i < rows)
+	wow = (t_color**)malloc(sizeof(t_color*) * (scroll->row + 64000));
+	scroll->int_map = coords_z(scroll, wow);
+	scroll->max_z = look_for_max_z(scroll);
+	set_coefs(coefs, scroll, &x, &y);
+	coords = (t_point**)malloc(sizeof(t_point*) * (scroll->row + 64000));
+	while (++coefs->i < scroll->row)
 	{
-		coords[coefs->i] = (t_point*)malloc(sizeof(t_point) * (columns + 64000));
+		coords[coefs->i] = (t_point*)malloc(sizeof(t_point) * (scroll->column + 64000));
 		coefs->j = -1;
-		while (++coefs->j < columns)
+		while (++coefs->j < scroll->column)
 		{
-			coords[coefs->i][coefs->j].x = (x + coefs->coef1 * coefs->j);
-			coords[coefs->i][coefs->j].y = (y - coefs->coef2 * coefs->j * 0.5);
-			coords[coefs->i][coefs->j].z = (map[coefs->i][coefs->j] * coefs->coef3);
+			coords[coefs->i][coefs->j].x = (float)(x + coefs->coef1 * (float)coefs->j);
+			coords[coefs->i][coefs->j].y = (float)(y - coefs->coef2 * (float)coefs->j * 0.5);
+			coords[coefs->i][coefs->j].z = (float)((float)scroll->int_map[coefs->i][coefs->j] * coefs->coef3);
+			coords[coefs->i][coefs->j].color = wow[coefs->i][coefs->j].color;
 		}
+//		ft_memdel((void**)&wow[coefs->i]);
 		x += coefs->coef1;
 		y += coefs->coef2 * 0.5;
 	}
+//	ft_memdel((void**)&wow);
+	destroy_color(wow);
 	ft_memdel((void**)&coefs);
 	return (coords);
 }
@@ -272,6 +386,7 @@ void	some_drawing2(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
 		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
 		holdup->x2 = lul[ig->i][ig->j + 1].x;
 		holdup->y2 = lul[ig->i][ig->j + 1].y - lul[ig->i][ig->j + 1].z;
+		holdup->color = lul[ig->i][ig->j].color;
 		draw_line(holdup);
 	}
 	if (ig->j - 1 > 0)
@@ -280,6 +395,7 @@ void	some_drawing2(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
 		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
 		holdup->x2 = lul[ig->i][ig->j - 1].x;
 		holdup->y2 = lul[ig->i][ig->j - 1].y - lul[ig->i][ig->j - 1].z;
+		holdup->color = lul[ig->i][ig->j].color;
 		draw_line(holdup);
 	}
 }
@@ -292,6 +408,7 @@ void	some_drawing1(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
 		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
 		holdup->x2 = lul[ig->i - 1][ig->j].x;
 		holdup->y2 = lul[ig->i - 1][ig->j].y - lul[ig->i - 1][ig->j].z;
+		holdup->color = lul[ig->i][ig->j].color;
 		draw_line(holdup);
 	}
 	if (ig->i + 1 < scroll->row)
@@ -300,6 +417,7 @@ void	some_drawing1(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
 		holdup->y1 = lul[ig->i][ig->j].y - lul[ig->i][ig->j].z;
 		holdup->x2 = lul[ig->i + 1][ig->j].x;
 		holdup->y2 = lul[ig->i + 1][ig->j].y - lul[ig->i + 1][ig->j].z;
+		holdup->color = lul[ig->i][ig->j].color;
 		draw_line(holdup);
 	}
 	some_drawing2(holdup, ig, lul, scroll);
@@ -375,8 +493,8 @@ int		main(int argc, char **argv)
 	if (scroll->column == -1)
 		return (0);
 	mlx_win = mlx_new_window(mlx_ptr, 1500, 1000, "yay");
-	scroll->int_map = coords_z(scroll->map, scroll->row, scroll->column);
-	lul = ultimate_creator(scroll->row, scroll->column, scroll->int_map);
+//	scroll->int_map = coords_z(scroll);
+	lul = ultimate_creator(scroll);
 	print_smth(mlx_ptr, mlx_win, lul, scroll);
 	destroy_point(lul, scroll->row);
 	destroy_scroll(scroll, scroll->row);
