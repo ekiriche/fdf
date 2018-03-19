@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/19 16:56:16 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/19 18:19:35 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,7 +205,6 @@ int 	**coords_z(t_map *scroll, t_color **wow)
 				}
 				else
 					wow[i][k - 1].color = 40000;
-//				ft_printf("%d\n", wow[i][k - 1].color);
 				count = 0;
 			}
 		ans[i][k] = '\0';
@@ -288,36 +287,6 @@ void	set_coefs(t_coefs *coefs, t_map *scroll, float *x, float *y)
 {
 	*x = 50;
 	*y = 600;
-	/*	if (scroll->column >= 400)
-		{
-		coefs->coef1 = 0.9;
-		coefs->coef2 = 1.1;
-		coefs->coef3 = 2;
-		}
-		else if (scroll->column >= 200)
-		{
-		coefs->coef1 = 3;
-		coefs->coef2 = 1;
-		coefs->coef3 = 2;
-		}
-		else if (scroll->column >= 100)
-		{
-		coefs->coef1 = 2;
-		coefs->coef2 = 2;
-		coefs->coef3 = 3;
-		}
-		else if (scroll->column >= 50)
-		{
-		coefs->coef1 = 5;
-		coefs->coef2 = 5;
-		coefs->coef3 = 8;
-		}
-		else
-		{
-		coefs->coef1 = 10;
-		coefs->coef2 = 10;
-		coefs->coef3 = 15;
-		}*/
 	coefs->coef1 = 500 / scroll->column + 0.5;
 	coefs->coef2 = 300 / scroll->row + 1.5;
 	coefs->coef3 = 100 / scroll->max_z + 2.5;
@@ -362,11 +331,9 @@ t_point	**ultimate_creator(t_map *scroll)
 			coords[coefs->i][coefs->j].z = (float)((float)scroll->int_map[coefs->i][coefs->j] * coefs->coef3);
 			coords[coefs->i][coefs->j].color = wow[coefs->i][coefs->j].color;
 		}
-//		ft_memdel((void**)&wow[coefs->i]);
 		x += coefs->coef1;
 		y += coefs->coef2 * 0.5;
 	}
-//	ft_memdel((void**)&wow);
 	destroy_color(wow);
 	ft_memdel((void**)&coefs);
 	return (coords);
@@ -398,6 +365,7 @@ void	some_drawing2(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
 		holdup->color = lul[ig->i][ig->j].color;
 		draw_line(holdup);
 	}
+
 }
 
 void	some_drawing1(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
@@ -443,6 +411,8 @@ void	print_smth(void *mlx_ptr, void *mlx_win, t_point **lul, t_map *scroll)
 		}
 		ig->i++;
 	}
+	ft_memdel((void**)&holdup);
+	ft_memdel((void**)&ig);
 }
 
 void	destroy_point(t_point **lul, int rows)
@@ -493,7 +463,6 @@ int		main(int argc, char **argv)
 	if (scroll->column == -1)
 		return (0);
 	mlx_win = mlx_new_window(mlx_ptr, 1500, 1000, "yay");
-//	scroll->int_map = coords_z(scroll);
 	lul = ultimate_creator(scroll);
 	print_smth(mlx_ptr, mlx_win, lul, scroll);
 	destroy_point(lul, scroll->row);
