@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/20 13:09:14 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/20 13:16:43 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -243,16 +243,21 @@ int		**coords_z(t_map *scroll, t_color **wow)
 	return (ans);
 }
 
-void	draw_line(t_hold *h)
+void	set_draws(t_draw *p, t_hold *h)
 {
-	t_draw	*p;
-
-	p = (t_draw*)malloc(sizeof(t_draw));
 	p->deltax = abs(h->x2 - h->x1);
 	p->deltay = abs(h->y2 - h->y1);
 	p->signx = h->x1 < h->x2 ? 1 : -1;
 	p->signy = h->y1 < h->y2 ? 1 : -1;
 	p->error = p->deltax - p->deltay;
+}
+
+void	draw_line(t_hold *h)
+{
+	t_draw	*p;
+
+	p = (t_draw*)malloc(sizeof(t_draw));
+	set_draws(p, h);
 	mlx_pixel_put(h->mlx_ptrz, h->mlx_winz, h->x2, h->y2, h->color);
 	while (h->x1 != h->x2 || h->y1 != h->y2)
 	{
