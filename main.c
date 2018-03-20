@@ -6,7 +6,7 @@
 /*   By: ekiriche <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/02/21 14:35:57 by ekiriche          #+#    #+#             */
-/*   Updated: 2018/03/20 13:16:43 by ekiriche         ###   ########.fr       */
+/*   Updated: 2018/03/20 13:51:09 by ekiriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,7 @@
 #include <math.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include "ft_printf.h"
-#include "libft.h"
+#include "libft/libft.h"
 
 typedef struct	s_point2
 {
@@ -92,7 +91,7 @@ int		escape_key(int key, void *param)
 	return (0);
 }
 
-long int	ft_strtol(char *line)
+/*long int	ft_strtol(char *line)
 {
 	long int	rslt;
 	long int	*hexa;
@@ -119,9 +118,9 @@ long int	ft_strtol(char *line)
 	}
 	ft_memdel((void**)&hexa);
 	return (rslt);
-}
+}*/
 
-int		look_for_max_z(t_map *map)
+/*int		look_for_max_z(t_map *map)
 {
 	int	max;
 	int	i;
@@ -241,9 +240,9 @@ int		**coords_z(t_map *scroll, t_color **wow)
 	ans[p->i] = NULL;
 	ft_memdel((void**)&p);
 	return (ans);
-}
+}*/
 
-void	set_draws(t_draw *p, t_hold *h)
+/*void	set_draws(t_draw *p, t_hold *h)
 {
 	p->deltax = abs(h->x2 - h->x1);
 	p->deltay = abs(h->y2 - h->y1);
@@ -275,9 +274,9 @@ void	draw_line(t_hold *h)
 		}
 	}
 	ft_memdel((void**)&p);
-}
+}*/
 
-void	count_column_norm(int *j, int *i, char **str, int *ans)
+/*void	count_column_norm(int *j, int *i, char **str, int *ans)
 {
 	while (str[*j][*i])
 	{
@@ -311,7 +310,6 @@ int		count_column(char **str)
 		ans = 0;
 		j++;
 	}
-	ft_printf("%d\n", check);
 	return (check);
 }
 
@@ -322,11 +320,10 @@ int		count_row(char **str)
 	ans = 0;
 	while (str[ans])
 		ans++;
-	ft_printf("%i\n", ans);
 	return (ans);
-}
+}*/
 
-void	set_coefs(t_coefs *coefs, t_map *scroll, float *x, float *y)
+/*void	set_coefs(t_coefs *coefs, t_map *scroll, float *x, float *y)
 {
 	*x = 50;
 	*y = 600;
@@ -334,9 +331,9 @@ void	set_coefs(t_coefs *coefs, t_map *scroll, float *x, float *y)
 	coefs->coef2 = 300 / scroll->row + 1.5;
 	coefs->coef3 = 100 / scroll->max_z + 2.5;
 	coefs->i = -1;
-}
+}*/
 
-void	destroy_color(t_color **wow)
+/*void	destroy_color(t_color **wow)
 {
 	int	i;
 
@@ -347,9 +344,9 @@ void	destroy_color(t_color **wow)
 		i++;
 	}
 	ft_memdel((void**)&wow);
-}
+}*/
 
-void	ulti_norm(t_map *scroll, t_point2 *xy, t_coefs *coefs, t_color **wow)
+/*void	ulti_norm(t_map *scroll, t_point2 *xy, t_coefs *coefs, t_color **wow)
 {
 	scroll->int_map = coords_z(scroll, wow);
 	scroll->max_z = look_for_max_z(scroll);
@@ -399,9 +396,9 @@ t_point	**ultimate_creator(t_map *scroll)
 	}
 	ulti_norm2(wow, coefs, xy);
 	return (coords);
-}
+}*/
 
-void		some_drawing2(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
+/*void		some_drawing2(t_hold *holdup, t_coefs *ig, t_point **lul, t_map *scroll)
 {
 	if (ig->j + 1 < scroll->column)
 	{
@@ -469,9 +466,9 @@ void	print_smth(void *mlx_ptr, void *mlx_win, t_point **lul, t_map *scroll)
 	}
 	ft_memdel((void**)&holdup);
 	ft_memdel((void**)&ig);
-}
+}*/
 
-void	destroy_point(t_point **lul, int rows)
+/*void	destroy_point(t_point **lul, int rows)
 {
 	int i;
 
@@ -498,7 +495,7 @@ void	destroy_scroll(t_map *scroll, int rows)
 	ft_memdel((void**)&scroll->map);
 	ft_memdel((void**)&scroll->int_map);
 	ft_memdel((void**)&scroll);
-}
+}*/
 
 int		main(int argc, char **argv)
 {
@@ -516,7 +513,7 @@ int		main(int argc, char **argv)
 	scroll->map = coords_from_file(fd);
 	scroll->row = count_row(scroll->map);
 	scroll->column = count_column(scroll->map);
-	if (scroll->column == -1)
+	if (scroll->column == -1 || scroll->column == 0)
 		return (0);
 	mlx_win = mlx_new_window(mlx_ptr, 1500, 1000, "yay");
 	lul = ultimate_creator(scroll);
